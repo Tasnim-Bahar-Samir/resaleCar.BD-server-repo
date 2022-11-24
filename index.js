@@ -22,6 +22,7 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 
 const userCollection = client.db('resaleDb').collection('users');
 const categoryColleciton = client.db('resaleDb').collection('categories');
+const productColleciton = client.db('resaleDb').collection('products');
 
 
 const verifyToken = async(req,res,next)=>{
@@ -44,6 +45,43 @@ const verifyToken = async(req,res,next)=>{
 
 async function run(){
     try{
+        // category collection
+        app.get('/categories', async(req,res)=>{
+
+            const result = await categoryColleciton.find({}).toArray();
+            res.send({
+                success:true,
+                data: result
+            })
+        })
+
+        
+
+        //product collection
+        app.get('/category/:name', async(req,res)=>{
+            const {name} = req.params;
+            const query = {category:name};
+            const result = await productColleciton.find(query).toArray()
+            res.send({
+                success:true,
+                data:result
+            })
+        })
+        app.post('/products', async(req,res)=>{
+            const product = req.body;
+            const result = await productColleciton.insertOne(product)
+            if(result.insertedId){
+                res.send({
+                    success:true,
+                    message:"Product Submited Successfully"
+                })
+            }else{
+                res.send({
+                    success:true,
+                    message:"Failed to submit"
+                })
+            }
+        })
 
         app.get('/jwt', async(req,res)=>{
             const {email} = req.query;
@@ -64,7 +102,24 @@ async function run(){
         })
 
         
+        //user collection
 
+        app.get('/users/seller', async(req,res) => {
+            const query = {mode:'seller'}
+            const result = await userCollection.find(query).toArray();
+            res.send({
+                success:true,
+                data:result
+            })
+        })
+        app.get('/users/buyer', async(req,res) => {
+            const query = {mode:'buyer'}
+            const result = await userCollection.find(query).toArray();
+            res.send({
+                success:true,
+                data:result
+            })
+        })
         app.post('/users', async(req,res)=>{
             const user = req.body;
             const result = await userCollection.insertOne(user)
