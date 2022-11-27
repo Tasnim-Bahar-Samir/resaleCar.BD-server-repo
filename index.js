@@ -122,7 +122,7 @@ async function run() {
       });
     });
 
-    app.get("/Products/advertised", async (req, res) => {
+    app.get("/Products/advertised",verifyToken, async (req, res) => {
       const query = { advertised: true, status:"available" };
       const result = await productColleciton.find(query).toArray();
       res.send({
@@ -244,7 +244,7 @@ async function run() {
 
     //user collection
 
-    app.get("/users/seller", async (req, res) => {
+    app.get("/users/seller",verifyToken, async (req, res) => {
       const query = { role: "seller" };
       const result = await userCollection.find(query).toArray();
       res.send({
@@ -252,7 +252,7 @@ async function run() {
         data: result,
       });
     });
-    app.get("/users/buyer", async (req, res) => {
+    app.get("/users/buyer", verifyToken, async (req, res) => {
       const query = { role: "buyer" };
       const result = await userCollection.find(query).toArray();
       res.send({
@@ -358,7 +358,7 @@ async function run() {
 
     //order collections
 
-    app.get("/orders", async (req, res) => {
+    app.get("/orders",verifyToken, async (req, res) => {
       const { email } = req.query;
       const query = { buyerEmail: email };
       const result = await orderCollection.find(query).toArray();
