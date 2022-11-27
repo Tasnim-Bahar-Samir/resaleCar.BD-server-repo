@@ -58,7 +58,33 @@ const verifyAdmin = async (req, res, next) => {
   if (user.role !== "admin") {
     return res.send({
       success: false,
-      message: "Invalid User",
+      message:  ` You are on ${user.role} mode. Admin is not allowed to do this.`,
+    });
+  }
+  next();
+};
+
+const verifySeller = async (req, res, next) => {
+  const { email } = req.user;
+  const query = { email: email };
+  const user = await userCollection.findOne(query);
+  if (user.role !== "seller") {
+    return res.send({
+      success: false,
+      message: `Sorry you are not a 'Seller'. You are on ${user.role} mode`,
+    });
+  }
+  next();
+};
+
+const verifyBuyer = async (req, res, next) => {
+  const { email } = req.user;
+  const query = { email: email };
+  const user = await userCollection.findOne(query);
+  if (user.role !== "buyer") {
+    return res.send({
+      success: false,
+      message: `Sorry you are not a 'Buyer'. You are on ${user.role} mode`
     });
   }
   next();
@@ -115,7 +141,7 @@ async function run() {
       });
     });
 
-    app.post("/products", async (req, res) => {
+    app.post("/products",verifyToken, verifySeller, async (req, res) => {
       const product = req.body;
       const result = await productColleciton.insertOne(product);
       if (result.insertedId) {
@@ -125,13 +151,13 @@ async function run() {
         });
       } else {
         res.send({
-          success: true,
-          message: "Failed to submit",
+          success: false,
+          message: "Only Seller can add a product",
         });
       }
     });
 
-    app.put("/product/advertise/:id", async (req, res) => {
+    app.put("/product/advertise/:id", verifyToken, async (req, res) => {
       const { id } = req.params;
       const query = { _id: ObjectId(id) };
       const alreadyAdvertised = await productColleciton.findOne(query);
@@ -185,7 +211,7 @@ async function run() {
       }
     });
 
-    app.delete("/product/:id", verifyToken, verifyAdmin, async (req, res) => {
+    app.delete("/product/:id", async (req, res) => {
       const { id } = req.params;
       const query = { _id: ObjectId(id) };
       const result = await productColleciton.deleteOne(query);
@@ -219,7 +245,7 @@ async function run() {
     //user collection
 
     app.get("/users/seller", async (req, res) => {
-      const query = { mode: "seller" };
+      const query = { role: "seller" };
       const result = await userCollection.find(query).toArray();
       res.send({
         success: true,
@@ -227,7 +253,7 @@ async function run() {
       });
     });
     app.get("/users/buyer", async (req, res) => {
-      const query = { mode: "buyer" };
+      const query = { role: "buyer" };
       const result = await userCollection.find(query).toArray();
       res.send({
         success: true,
@@ -241,18 +267,22 @@ async function run() {
       verifyAdmin,
       async (req, res) => {
         const { id } = req.params;
-        query = { _id: ObjectId(id) };
-        const options = { upsert: true };
-        const result = await orderCollection.updateOne(
+        const query = { _id: ObjectId(id) };
+        const result = await userCollection.updateOne(
           query,
-          { $set: { status: verified } },
-          options
+          { $set: { status: 'verified' } }
         );
+        console.log(result)
         if (result.modifiedCount) {
           res.send({
             success: true,
             message: "Successfully verified the user",
           });
+        }else{
+          res.send({
+            success: false,
+            message:"failed to update"
+          })
         }
       }
     );
@@ -287,6 +317,28 @@ async function run() {
       }
     });
 
+//getting user role
+    app.get('/users/admin/:email', async(req,res)=>{
+      const {email} = req.params
+      const query = {email}
+      const user = await userCollection.findOne(query);
+      if(user.role === 'admin'){
+       return res.send({
+          admin:true,
+        })
+      }
+      if(user.role === "seller"){
+        return res.send({
+          seller: true,
+        })
+      }
+      if(user.role === 'buyer'){
+        return res.send({
+          buyer: true
+        })
+      }
+  })
+
     //order collections
 
     app.get("/orders", async (req, res) => {
@@ -309,9 +361,9 @@ async function run() {
       });
     });
 
-    app.post("/orders", async (req, res) => {
+    app.post("/orders",verifyToken, verifyBuyer, async (req, res) => {
       const data = req.body;
-      const query = { email: data.email };
+      const query = { buyerEmail: data.buyerEmail };
       const alreadyAdded = await orderCollection.find(query).toArray();
       if (alreadyAdded.length) {
         return res.send({
@@ -328,7 +380,7 @@ async function run() {
       } else {
         res.send({
           success: false,
-          message: "Failed to proceed order.",
+          message: "Only buyer can a proceed order.",
         });
       }
     });
@@ -360,7 +412,10 @@ async function run() {
             }
         }
         const updateOrder = await orderCollection.updateOne(query,updatedDoc)
+        
+        const productQuery = {_id : paymentData.productId}
 
+        const updateProduct = await productColleciton.updateOne(productQuery,{$set:{status:'sold'}})
         if(result.insertedId){
             res.send({
                 success: true,
