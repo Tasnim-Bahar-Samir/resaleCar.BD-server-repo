@@ -429,10 +429,9 @@ async function run() {
             }
         }
         const updateOrder = await orderCollection.updateOne(query,updatedDoc)
-        
-        const productQuery = {_id : paymentData.productId}
-
-        const updateProduct = await productColleciton.updateOne(productQuery,{$set:{status:'sold'}})
+        const filter = {_id : ObjectId(paymentData.productId)}
+        const updateProduct = await productColleciton.updateOne(filter,{$set:{status:'sold'}})
+        console.log(updateProduct)
         if(result.insertedId){
             res.send({
                 success: true,
