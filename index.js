@@ -104,7 +104,7 @@ async function run() {
     //product collection
     app.get("/category/:name", async (req, res) => {
       const { name } = req.params;
-      const query = { category: name };
+      const query = { category: name, status: "available" };
       const result = await productColleciton.find(query).toArray();
       res.send({
         success: true,
@@ -123,7 +123,7 @@ async function run() {
     });
 
     app.get("/Products/advertised", async (req, res) => {
-      const query = { advertised: true };
+      const query = { advertised: true, status:"available" };
       const result = await productColleciton.find(query).toArray();
       res.send({
         success: true,
@@ -261,6 +261,16 @@ async function run() {
       });
     });
 
+    app.get("/users", async(req,res)=>{
+      const email = req.query.email;
+      const query = {email:email};
+      const result = await userCollection.findOne(query)
+      res.send({
+        success:true,
+        data:result
+      })
+    })
+
     app.put(
       "/user/verified/:id",
       verifyToken,
@@ -287,8 +297,15 @@ async function run() {
       }
     );
 
+
     app.post("/users", async (req, res) => {
+
       const user = req.body;
+      const query = {email:user.email}
+      const alreadyAddedUser = await userCollection.find(query).toArray();
+      if(alreadyAddedUser.length){
+        return res.send({})
+      }
       const result = await userCollection.insertOne(user);
 
       if (result.insertedId) {
