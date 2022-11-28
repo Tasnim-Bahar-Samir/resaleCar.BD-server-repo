@@ -381,7 +381,7 @@ async function run() {
 
     app.post("/orders",verifyToken, verifyBuyer, async (req, res) => {
       const data = req.body;
-      const query = { buyerEmail: data.buyerEmail , productName:data.productName };
+      const query = { buyerEmail: data.buyerEmail , productId:data.productId };
       const alreadyAdded = await orderCollection.find(query).toArray();
       if (alreadyAdded.length) {
         return res.send({
