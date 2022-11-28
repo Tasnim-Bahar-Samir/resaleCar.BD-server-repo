@@ -3,7 +3,6 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-const { query } = require("express");
 
 const stripe = require("stripe")(process.env.STRYPE_SECRETE_KEY);
 
@@ -122,23 +121,25 @@ async function run() {
       });
     });
 
-    app.get("/Products/advertised",verifyToken, async (req, res) => {
+    app.get("/products/advertised",verifyToken, async (req, res) => {
       const query = { advertised: true, status:"available" };
       const result = await productColleciton.find(query).toArray();
       res.send({
         success: true,
         data: result,
-      });
+      })
     });
 
     app.get("/product/reported", async (req, res) => {
       const query = {};
       const products = await productColleciton.find(query).toArray();
-      const reportedProducts = products.filter((product) => product.reported);
-      res.send({
-        success: true,
-        data: reportedProducts,
-      });
+      const reportedProducts =  products.filter(product => product.reported);
+
+        res.send({
+          success: true,
+          data: reportedProducts,
+        });
+      
     });
 
     app.post("/products",verifyToken, verifySeller, async (req, res) => {
@@ -380,7 +381,7 @@ async function run() {
 
     app.post("/orders",verifyToken, verifyBuyer, async (req, res) => {
       const data = req.body;
-      const query = { buyerEmail: data.buyerEmail };
+      const query = { buyerEmail: data.buyerEmail , productName:data.productName };
       const alreadyAdded = await orderCollection.find(query).toArray();
       if (alreadyAdded.length) {
         return res.send({
@@ -405,12 +406,15 @@ async function run() {
     //payment api
     app.post("/create-payment-intent", async (req, res) => {
       const data = req.body;
+      console.log(data)
       const price = data.price;
       const amount = price * 100;
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
         currency: "BDT",
-        payment_method_types: ["card"],
+        "payment_method_types": [
+           "card"
+          ],
       });
       res.send({
         clientSecret: paymentIntent.client_secret,
