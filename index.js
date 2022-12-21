@@ -121,7 +121,7 @@ async function run() {
       });
     });
 
-    app.get("/products/advertised",verifyToken, async (req, res) => {
+    app.get("/products/advertised", async (req, res) => {
       const query = { advertised: true, status:"available" };
       const result = await productColleciton.find(query).toArray();
       res.send({
@@ -158,7 +158,7 @@ async function run() {
       }
     });
 
-    app.put("/product/advertise/:id", verifyToken, async (req, res) => {
+    app.put("/product/advertise/:id", async (req, res) => {
       const { id } = req.params;
       const query = { _id: ObjectId(id) };
       const alreadyAdvertised = await productColleciton.findOne(query);
@@ -337,9 +337,11 @@ async function run() {
 
 //getting user role
     app.get('/users/admin/:email', async(req,res)=>{
-      const {email} = req.params
+      const {email} = req.params;
+      console.log(email)
       const query = {email}
       const user = await userCollection.findOne(query);
+      console.log(user)
       if(user.role === 'admin'){
        return res.send({
           admin:true,
